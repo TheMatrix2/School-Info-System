@@ -1,4 +1,5 @@
 name: Go
+
 on: 
   push:
     branches:
@@ -8,33 +9,44 @@ on:
       - master
 
 jobs:
-  lint:
-    name: Run Linter
+  ci:
+    name: Lint, Test and Build
     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v5
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21.x'
-    - name: Install GolangCI-Lint
-      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    defaults:
+      run:
+        working-directory: backend
 
-    - name: Run GolangCI-Lint
-      run: golangci-lint run --timeout=5m
-
-  build:
-    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - name: Setup Go
+    - name: Checkout
       uses: actions/checkout@v5
+    
+    - name: Setup Go
+      uses: actions/setup-go@v4
       with:
         go-version: '1.21.x'
-    - name: Build
-      run: go build -v ./...
-      working-directory: ./backend
+        cache-dependency-path: ./go.sum
+    
+    - name: Download Dependencies
+      run: go mod download
+    
+    - name: Lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        working-directory: ./backend
+        args: --timeout=5m
+    
     - name: Test
-      run: go test -v ./...
-      working-directory: ./backend
+      run: go test -v ./... -v -race -coverprofile=coverage.out
+    
+    - name: Build
+      run: |
+        mkdir -p bin
+        go build -o bin/app ./cmd/main.go
+    
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-info-system
+        path: backend/bin/app
