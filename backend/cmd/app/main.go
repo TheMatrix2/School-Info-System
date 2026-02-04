@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"github.com/gin-gonic/gin"
+	"log"
 )
 
 type album struct {
@@ -24,7 +25,9 @@ func main() {
 	router.GET("/albums/:id", getAlbumByID)
     router.POST("/albums", postAlbums)
 
-    router.Run("localhost:8080")
+    if err :=router.Run("localhost:8080"); err != nil {
+        log.Fatal(err)
+    }
 }
 
 // getAlbums responds with the list of all albums as JSON.
